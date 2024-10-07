@@ -1,0 +1,61 @@
+services: 
+
+  app:
+    build: 
+      context: ./node
+      dockerfile: Dockerfile
+    image: diogowinck/node
+    container_name: app
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 20s sh -c "npm install  && npm run start" 
+    networks: 
+      - node-network
+    volumes: 
+      - ./node:/usr/src/app
+    tty: true
+    depends_on: 
+       - db
+
+  db:
+    image: mysql:8.0
+    container_name: db
+    restart: always
+    tty: true
+    ports:
+      - "3306:3306"
+    volumes: 
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/conf:/etc/mysql/conf.d
+      - ./mysql/init/:/docker-entrypoint-initdb.d/
+    environment: 
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_AUTHENTICATION_PLUGIN=mysql_native_password
+    command: --character-set-server=utf8mb4 
+             --collation-server=utf8mb4_unicode_ci
+             --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks: 
+      - node-network
+  
+  nginx:
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: diogowinck/nginx
+    container_name: nginx
+    networks: 
+      - node-network
+    ports: 
+      - "8080:80"
+    depends_on:
+      - app
+      - db
+
+
+networks: 
+  node-network:
+    driver: bridge      
