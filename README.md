@@ -13,7 +13,7 @@ Este projeto implementa um proxy reverso Nginx para uma aplicação Node.js que 
 ```bash
 docker-compose up -d 
 Acesse a aplicação em: http://localhost:8080
-
+```
 
 **Observações:**
 
